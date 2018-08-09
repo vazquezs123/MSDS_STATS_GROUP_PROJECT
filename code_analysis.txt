@@ -1,0 +1,44 @@
+
+data test;
+set work.test;
+SalePrice =.;
+;
+
+
+data forward_homes;
+set work.homes test;
+run;
+
+data home_data;
+set forward_homes;
+if _n_ = 1299 then delete;
+lYearBuilt = log(YearBuilt);
+lSalePrice = log(SalePrice);
+lGrLivArea = log(GrLivArea);
+run;
+
+
+
+proc glmselect data=home_data;
+class MSZoning MSSubClass OverallQual OverallCond Street Alley LotFrontage LotShape LandContour Utilities BldgType BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2 BsmtQual CentralAir Condition1 Condition2 Electrical ExterCond ExterQual Exterior1st Exterior2nd Fence FireplaceQu Foundation Functional GarageCond GarageFinish GarageQual GarageType Heating HeatingQC HouseStyle KitchenQual LandSlope LotConfig MiscFeature MasVnrType Neighborhood PavedDrive PoolQC RoofMatl RoofStyle SaleCondition SaleType	;
+model SalePrice =  A1stFlrSF A2ndFlrSF A3SsnPorch MSZoning GrLivArea MSSubClass LotArea OverallQual OverallCond YearBuilt YearRemodAdd MasVnrArea BsmtFinSF1 BsmtFinSF2 BsmtUnfSF TotalBsmtSF LowQualFinSF BsmtFullBath BsmtHalfBath FullBath HalfBath BedroomAbvGr KitchenAbvGr TotRmsAbvGrd Fireplaces GarageYrBlt GarageCars GarageArea WoodDeckSF OpenPorchSF EnclosedPorch ScreenPorch PoolArea MiscVal MoSold YrSold LotFrontage Street Alley LotShape LandContour Utilities BldgType BsmtCond BsmtExposure BsmtFinType1 BsmtFinType2 BsmtQual CentralAir Condition1 Condition2 Electrical ExterCond ExterQual Exterior1st Exterior2nd Fence FireplaceQu Foundation Functional  GarageCond GarageFinish GarageQual GarageType Heating HeatingQC HouseStyle KitchenQual LandSlope LotConfig MiscFeature MasVnrType Neighborhood PavedDrive PavedDrive PoolQC RoofMatl RoofStyle SaleCondition SaleType
+/ selection = Stepwise (Stop = CV) cvmethod = random(5) stats = adjrsq;
+output out=results_s p = Predict;
+run; 
+
+
+proc glm data = home_data plots = all;
+class OverallQual Neighborhood;
+model SalePrice = OverallQual Neighborhood GrLivArea BsmtFinSF1 lYearBuilt;
+output out=results_s p = Predict;
+run;
+
+
+data results_stepwise;
+set results_s;
+if Predict > 0 then SalePrice = Predict;
+if Predict < 0 then SalePrice = 10000;
+keep id SalePrice;
+where id > 1460;
+run;
+
